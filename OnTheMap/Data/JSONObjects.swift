@@ -71,8 +71,19 @@ struct UserCredentials: Codable {
 
 }
 
+let x = """
+{
+    uniqueKey: 1234,
+    firstName: John,
+    lastName: Doe,
+    mapString: Mountain View, CA,
+    mediaURL: https://udacity.com,
+    latitude: 37.386052,
+    longitude: -122.083851
+}
+"""
 
-struct StudentLocation: Codable {
+struct Student: Codable {
     
     let objectId: String
     let uniqueKey: String
@@ -94,4 +105,10 @@ struct StudentLocation: Codable {
     }
     
 }
+
+
+// struct User: Codable {
+//     <#fields#>
+// }
+
 

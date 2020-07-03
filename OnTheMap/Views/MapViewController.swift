@@ -13,8 +13,8 @@ import MapKit
 class MapViewController: UIViewController {
     
     @IBOutlet weak var mapView: MKMapView!
-    
-    var studentLocations: [StudentLocation] = []
+    @IBOutlet weak var newPinButton: UIBarButtonItem!
+    @IBOutlet weak var reloadButton: UIBarButtonItem!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -22,11 +22,44 @@ class MapViewController: UIViewController {
         getStudentLocations()
     }
     
+    @IBAction func newPinButtonTapped(_ sender: Any) {
+        
+        let controller = self.storyboard!.instantiateViewController(
+            identifier: "NewPinViewController"
+        ) as! NewPinViewController
+        
+        controller.mapViewController = self
+        
+        present(controller, animated: true)
+        
+        
+    }
+    
+    @IBAction func reloadButtonTapped(_ sender: Any) {
+        getStudentLocations()
+    }
+    
+    
+    func addNewPin(placemark: CLPlacemark) {
+        guard let coordinate = placemark.location?.coordinate else {
+            mapViewLogger.error(
+                "could not get coordinates from user-entered address"
+            )
+            return
+        }
+        let pin = MKPointAnnotation()
+        pin.coordinate = coordinate
+        mapView.addAnnotation(pin)
+        mapViewLogger.debug("did add new pin from user address")
+        
+    }
+    
+    
     func getStudentLocations() {
         
         UdacityAPI.getStudentLocations { result in
             do {
-                self.studentLocations = try result.get()
+                StudentData.students = try result.get()
                 self.addMapPins()
                 
             } catch {
@@ -43,20 +76,22 @@ class MapViewController: UIViewController {
         
     }
     
-    
-    // add a pin to the map
     func addMapPins() {
         DispatchQueue.main.async {
-            for student in self.studentLocations {
+            for student in StudentData.students {
                 let pin = MKPointAnnotation()
                 pin.coordinate = student.mapCoordinate
                 pin.title = student.fullName
                 pin.subtitle = student.mediaURL
                 self.mapView.addAnnotation(pin)
             }
-            mapViewLogger.debug("added \(self.studentLocations.count) pins")
+            mapViewLogger.debug("added \(StudentData.students.count) pins")
         }
     }
+    
+    
+    
+    
     
 }
 
@@ -81,7 +116,8 @@ extension MapViewController: MKMapViewDelegate {
                 annotation: annotation, reuseIdentifier: "student"
             )
             annotationView?.canShowCallout = true
-            annotationView!.rightCalloutAccessoryView = UIButton(type: .custom)
+            annotationView?.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
+            annotationView?.rightCalloutAccessoryView?.isHidden = true
         }
         else {
             annotationView?.annotation = annotation
@@ -100,11 +136,20 @@ extension MapViewController: MKMapViewDelegate {
         annotationView view: MKAnnotationView,
         calloutAccessoryControlTapped control: UIControl
     ) {
-        mapViewLogger.debug("calloutAccessoryControlTapped")
+        if control == view.rightCalloutAccessoryView {
+            print("is rightCalloutAccessoryView")
+        }
+        else {
+            print("not rightCalloutAccessoryView")
+        }
+        
+        
+        mapViewLogger.debug("annotation tapped")
         if let string = (view.annotation?.subtitle as? String),
                let url = URL(string: string) {
         
-            UIApplication.shared.open(url)
+            mapViewLogger.debug("will open url: \(url)")
+            // UIApplication.shared.open(url)
         }
         else {
             mapViewLogger.warning(

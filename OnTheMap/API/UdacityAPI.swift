@@ -69,12 +69,12 @@ class UdacityAPI {
     
     @discardableResult
     class func getStudentLocations(
-        completion: @escaping (Result<[StudentLocation], Error>) -> Void
+        completion: @escaping (Result<[Student], Error>) -> Void
     ) -> URLSessionDataTask {
         
         let task = urlDataRequest(
             url: Endpoints.studentLocations,
-            responseType: [String: [StudentLocation]].self
+            responseType: [String: [Student]].self
         ) { result in
             do {
                 let reponseObject = try result.get()

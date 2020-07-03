@@ -10,7 +10,7 @@
         <!--Login View Controller-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController id="BYZ-38-t0r" userLabel="Login View Controller" customClass="ViewController" customModule="OnTheMap" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="BYZ-38-t0r" userLabel="Login View Controller" customClass="LoginViewController" customModule="OnTheMap" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -153,8 +153,16 @@
                                     <navigationItem title="On the Map" id="iDq-0p-9HI">
                                         <barButtonItem key="leftBarButtonItem" title="Logout" id="zoK-gN-emQ"/>
                                         <rightBarButtonItems>
-                                            <barButtonItem image="plus" catalog="system" id="Fox-Va-DAO" userLabel="Plus"/>
-                                            <barButtonItem title="Item" image="arrow.clockwise" catalog="system" id="y1n-kE-juQ" userLabel="Reload"/>
+                                            <barButtonItem title="Item" image="arrow.clockwise" catalog="system" id="y1n-kE-juQ" userLabel="Reload">
+                                                <connections>
+                                                    <action selector="reloadButtonTapped:" destination="D8o-tm-AlD" id="IiI-ZT-Tnr"/>
+                                                </connections>
+                                            </barButtonItem>
+                                            <barButtonItem title="Item" image="mappin.circle.fill" catalog="system" id="Fox-Va-DAO" userLabel="Plus">
+                                                <connections>
+                                                    <action selector="newPinButtonTapped:" destination="D8o-tm-AlD" id="Dpd-dg-baH"/>
+                                                </connections>
+                                            </barButtonItem>
                                         </rightBarButtonItems>
                                     </navigationItem>
                                 </items>
@@ -175,11 +183,99 @@
                     <tabBarItem key="tabBarItem" title="" image="map" catalog="system" selectedImage="map" id="XhZ-Vu-fxb" userLabel="Map Tab"/>
                     <connections>
                         <outlet property="mapView" destination="ijM-y4-rQ2" id="9um-35-h8u"/>
+                        <outlet property="newPinButton" destination="Fox-Va-DAO" id="sxP-jR-0v1"/>
+                        <outlet property="reloadButton" destination="y1n-kE-juQ" id="BW6-Lp-fyK"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ew8-LU-5wQ" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1657" y="-372"/>
+        </scene>
+        <!--NewPinViewController-->
+        <scene sceneID="N8D-ZS-dPw">
+            <objects>
+                <viewController storyboardIdentifier="NewPinViewController" title="NewPinViewController" id="ZRN-Jl-yKg" customClass="NewPinViewController" customModule="OnTheMap" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="FIZ-C0-AqE">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Where are you right now?" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Vyw-Xd-Wdy">
+                                <rect key="frame" x="46.5" y="114" width="321.5" height="27"/>
+                                <fontDescription key="fontDescription" name="Verdana-Bold" family="Verdana" pointSize="22"/>
+                                <color key="textColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="zjm-Kp-xVh">
+                                <rect key="frame" x="324" y="54" width="80" height="30"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="80" id="YNL-gZ-fOo"/>
+                                    <constraint firstAttribute="height" constant="30" id="fHM-nx-K47"/>
+                                </constraints>
+                                <state key="normal" title="Cancel"/>
+                                <connections>
+                                    <action selector="tappedCancelButton:" destination="ZRN-Jl-yKg" eventType="touchUpInside" id="SIM-Jq-wI4"/>
+                                </connections>
+                            </button>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UH9-NR-THd">
+                                <rect key="frame" x="0.0" y="191" width="414" height="200"/>
+                                <color key="backgroundColor" red="0.92143100499999997" green="0.92145264149999995" blue="0.92144101860000005" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="200" id="kbg-DD-B85"/>
+                                </constraints>
+                                <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                            </textView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="lmQ-Wa-G3n">
+                                <rect key="frame" x="82" y="441" width="250" height="50"/>
+                                <color key="backgroundColor" systemColor="systemOrangeColor" red="1" green="0.58431372550000005" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="250" id="8i5-td-LVJ"/>
+                                    <constraint firstAttribute="height" constant="50" id="Sc4-Gm-9Hn"/>
+                                </constraints>
+                                <fontDescription key="fontDescription" name="Verdana-Bold" family="Verdana" pointSize="22"/>
+                                <state key="normal" title="Find on the Map">
+                                    <color key="titleColor" red="0.99999600649999998" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="tappedFindOnMapButton:" destination="ZRN-Jl-yKg" eventType="touchUpInside" id="FbS-uM-kpk"/>
+                                </connections>
+                            </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Enter an Address" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ijm-jT-DJP">
+                                <rect key="frame" x="148.5" y="163" width="117" height="18"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                <color key="textColor" systemColor="secondaryLabelColor" red="0.23529411759999999" green="0.23529411759999999" blue="0.26274509800000001" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <color key="backgroundColor" red="0.3923987040616958" green="0.65261344726297099" blue="0.9238200874485597" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="Ijm-jT-DJP" firstAttribute="centerX" secondItem="FIZ-C0-AqE" secondAttribute="centerX" id="6H1-fj-1tb"/>
+                            <constraint firstItem="lmQ-Wa-G3n" firstAttribute="top" secondItem="UH9-NR-THd" secondAttribute="bottom" constant="50" id="AdP-0X-ycv"/>
+                            <constraint firstItem="Vyw-Xd-Wdy" firstAttribute="centerX" secondItem="FIZ-C0-AqE" secondAttribute="centerX" id="C6B-Ig-dFb"/>
+                            <constraint firstItem="CfT-cg-QYJ" firstAttribute="trailing" secondItem="zjm-Kp-xVh" secondAttribute="trailing" constant="10" id="LnB-3h-59x"/>
+                            <constraint firstItem="Vyw-Xd-Wdy" firstAttribute="top" secondItem="CfT-cg-QYJ" secondAttribute="top" constant="70" id="Ugv-pI-J68"/>
+                            <constraint firstItem="UH9-NR-THd" firstAttribute="top" secondItem="Vyw-Xd-Wdy" secondAttribute="bottom" constant="50" id="bEO-vs-tSD"/>
+                            <constraint firstItem="Ijm-jT-DJP" firstAttribute="width" secondItem="Vyw-Xd-Wdy" secondAttribute="width" multiplier="0.363919" id="cuR-ZK-k9Y"/>
+                            <constraint firstItem="UH9-NR-THd" firstAttribute="centerX" secondItem="FIZ-C0-AqE" secondAttribute="centerX" id="l38-uC-p8z"/>
+                            <constraint firstItem="zjm-Kp-xVh" firstAttribute="top" secondItem="CfT-cg-QYJ" secondAttribute="top" constant="10" id="uZh-f5-jyM"/>
+                            <constraint firstItem="UH9-NR-THd" firstAttribute="top" secondItem="Ijm-jT-DJP" secondAttribute="bottom" constant="10" id="uwG-3K-8ad"/>
+                            <constraint firstItem="lmQ-Wa-G3n" firstAttribute="centerX" secondItem="FIZ-C0-AqE" secondAttribute="centerX" id="w1T-bv-Ery"/>
+                            <constraint firstItem="UH9-NR-THd" firstAttribute="leading" secondItem="CfT-cg-QYJ" secondAttribute="leading" id="wtA-tU-9aX"/>
+                            <constraint firstItem="CfT-cg-QYJ" firstAttribute="trailing" secondItem="UH9-NR-THd" secondAttribute="trailing" id="zKl-SJ-blB"/>
+                            <constraint firstItem="zjm-Kp-xVh" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="CfT-cg-QYJ" secondAttribute="leading" symbolic="YES" id="zm0-Xf-GOM"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="CfT-cg-QYJ"/>
+                    </view>
+                    <connections>
+                        <outlet property="cancelButton" destination="zjm-Kp-xVh" id="3Mn-9U-Zlc"/>
+                        <outlet property="findOnMapButton" destination="lmQ-Wa-G3n" id="8FZ-rY-RFh"/>
+                        <outlet property="textView" destination="UH9-NR-THd" id="zBF-nD-D3Q"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="J71-Dn-Qcx" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="2421.739130434783" y="-372.32142857142856"/>
         </scene>
         <!--Tab Bar Controller-->
         <scene sceneID="wRf-PD-zXa">
@@ -205,6 +301,7 @@
         <image name="arrow.clockwise" catalog="system" width="115" height="128"/>
         <image name="list.bullet" catalog="system" width="128" height="88"/>
         <image name="map" catalog="system" width="128" height="113"/>
+        <image name="mappin.circle.fill" catalog="system" width="128" height="121"/>
         <image name="plus" catalog="system" width="128" height="113"/>
     </resources>
 </document>
