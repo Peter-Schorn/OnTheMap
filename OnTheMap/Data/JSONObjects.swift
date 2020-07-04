@@ -39,16 +39,19 @@ struct SessionResponse: Codable {
         let key: String
     }
     
-    struct Session: Codable {
-        let id: String
-        let expiration: String
-    }
-    
-    
     let account: Account
     let session: Session
 
     
+}
+
+struct Session: Codable {
+    let id: String
+    let expiration: String
+}
+
+struct DeleteSessionResponse: Codable {
+    let session: Session
 }
 
 struct UserCredentials: Codable {
@@ -71,19 +74,7 @@ struct UserCredentials: Codable {
 
 }
 
-let x = """
-{
-    uniqueKey: 1234,
-    firstName: John,
-    lastName: Doe,
-    mapString: Mountain View, CA,
-    mediaURL: https://udacity.com,
-    latitude: 37.386052,
-    longitude: -122.083851
-}
-"""
-
-struct Student: Codable {
+struct Student: Codable, Equatable {
     
     let objectId: String
     let uniqueKey: String
@@ -106,9 +97,27 @@ struct Student: Codable {
     
 }
 
+struct PostStudent: Codable {
+  
+  let uniqueKey: String
+  let firstName: String
+  let lastName: String
+  let mapString: String
+  let mediaURL: String
+  let latitude: Double
+  let longitude: Double
 
-// struct User: Codable {
-//     <#fields#>
-// }
+}
+
+
+
+struct LocationResponse: Codable {
+    
+    let createdAt: String
+    let objectId: String
+
+}
+
+
 
 

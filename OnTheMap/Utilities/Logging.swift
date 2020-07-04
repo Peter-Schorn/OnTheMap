@@ -30,10 +30,13 @@ open class Logger: Equatable, Identifiable, Hashable {
     
     /// The type of the closure that determines
     /// how the log message is formatted.
+    /// See `logMsgFormatter` `infoMsgFormatter`, `debugMsgFormatter`,
+    /// `warningMsgFormatter`, `errorMsgFormatter`,
+    /// and `criticalMsgFormatter`.
     public typealias LogMsgFormatter = (
         _ date: Date, _ label: String, _ level: Level,
         _ file: String, _ function: String, _ line: UInt,
-        _ message: String
+        _ message: () -> String
     ) -> Void
     
     
@@ -72,7 +75,7 @@ open class Logger: Equatable, Identifiable, Hashable {
     
     
     /// Sets the logging level for all **current** loggers.
-    /// This function **WILL NOT** affect loggers created in the future.
+    /// This function will not affect loggers created in the future.
     open class func setLevel(to level: Level) {
         for logger in allLoggers {
             logger.level = level
@@ -153,22 +156,23 @@ open class Logger: Equatable, Identifiable, Hashable {
     open var level: Level
     public let id = UUID()
     
-    
     public init(
         label: String,
         level: Level = .debug,
         disabled: Bool = false,
-        logMsgFormatter: @escaping LogMsgFormatter = {
-            date, label, level, file, function, line, message in
-        
-            print("[\(label):line \(line):\(level)] \(message)")
-        }
+        logMsgFormatter: LogMsgFormatter? = nil
     ) {
+        
+        let formatter = logMsgFormatter ?? {
+            date, label, level, file, function, line, message in
+            
+            print("[\(label): \(level): line \(line)] \(message())")
+        }
+        
         self.label = label
         self.level = level
         self.disabled = disabled
-        self.logMsgFormatter = logMsgFormatter
-        
+        self.logMsgFormatter = formatter
         Self._allLoggers.append(WeakWrapper(self))
     }
     
@@ -179,25 +183,24 @@ open class Logger: Equatable, Identifiable, Hashable {
         
     }
     
-    
     /// Logs a message. Unless the log level is determined dynamically,
     /// you should normally use
     /// self.info, self.debug, self.warning, self.error, or self.critical
     /// to log a message at a given level.
     open func log(
         level: Level,
-        _ message: String,
+        _ message: @autoclosure @escaping () -> String,
         file: String = #file,
         function: String = #function,
         line: UInt = #line
     ) {
         
-        guard level >= self.level && !disabled && !Self.allDisabled else {
+        guard !Self.allDisabled && !disabled && level >= self.level else {
             return
         }
         
         let formatter: LogMsgFormatter?
-            
+        
         switch level {
             case .info:
                 formatter = infoMsgFormatter
@@ -211,7 +214,9 @@ open class Logger: Equatable, Identifiable, Hashable {
                 formatter = criticalMsgFormatter
         }
         
+        // uw = unwrapped
         let uwFormatter = formatter ?? logMsgFormatter
+        
         uwFormatter(
             Date(), label, level, file, function, line, message
         )
@@ -219,71 +224,76 @@ open class Logger: Equatable, Identifiable, Hashable {
     }
     
     /// Logs an informational message.
+    @inlinable
     open func info(
-        _ message: String,
+        _ message: @autoclosure @escaping () -> String,
         file: String = #file,
         function: String = #function,
         line: UInt = #line
     ) {
         
         self.log(
-            level: .info, message,
+            level: .info, message(),
             file: file, function: function, line: line
         )
     }
     
     /// Logs a debugging message.
+    @inlinable
     open func debug(
-        _ message: String,
+        _ message: @autoclosure @escaping () -> String,
         file: String = #file,
         function: String = #function,
         line: UInt = #line
     ) {
         
         self.log(
-            level: .debug, message,
+            level: .debug, message(),
             file: file, function: function, line: line
         )
     }
     
     /// Logs a warning message.
+    @inlinable
     open func warning(
-        _ message: String,
+        _ message: @autoclosure @escaping () -> String,
         file: String = #file,
         function: String = #function,
         line: UInt = #line
     ) {
         
         self.log(
-            level: .warning, message,
+            level: .warning, message(),
             file: file, function: function, line: line
         )
     }
     
     /// Logs an error message.
+    @inlinable
     open func error(
-        _ message: String,
+        _ message: @autoclosure @escaping () -> String,
         file: String = #file,
         function: String = #function,
         line: UInt = #line
     ) {
         
         self.log(
-            level: .error, message,
+            level: .error, message(),
             file: file, function: function, line: line
         )
     }
     
     /// Logs a critical error message.
+    @inlinable
     open func critical(
-        _ message: String,
+        _ message: @autoclosure @escaping () -> String,
         file: String = #file,
         function: String = #function,
         line: UInt = #line
     ) {
         
         self.log(
-            level: .critical, message,
+            level: .critical, message(),
             file: file, function: function, line: line
         )
     }
@@ -305,45 +315,4 @@ open class Logger: Equatable, Identifiable, Hashable {
     }
     
     
-    
-    
-    
-}
-
-
-extension RangeReplaceableCollection {
-    
-    /**
-     Removes the first element that satisfies the given
-     predicate.
-     
-     This method usually has better
-     performance characteristics than `self.removeAll(where:)`
-     if only a single element needs to be removed from the
-     collection because it returns after the first time that
-     the predicate returns true, whereas `self.removeAll(where:)`
-     will traverse the entire collection.
-     
-     - Parameter shouldBeRemoved: A closure that takes an element of
-           the collection as its argument and returns a Boolean value
-           indicating whether the element should be removed
-           from the collection.
-     
-     - Returns: The element of the collection that was removed
-           or nil if an item was not removed.
-     */
-    @discardableResult
-    mutating func removeFirst(
-        where shouldBeRemoved: (Element) throws -> Bool
-    ) rethrows -> Element? {
-        
-        for (indx, element) in zip(self.indices, self) {
-            if try shouldBeRemoved(element) {
-                self.remove(at: indx)
-                return element
-            }
-        }
-        return nil
-    }
-
 }

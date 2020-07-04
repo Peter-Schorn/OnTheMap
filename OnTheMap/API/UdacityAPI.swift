@@ -9,6 +9,7 @@
 import Foundation
 
 
+
 class UdacityAPI {
     
     private enum EndpointParts: String {
@@ -16,6 +17,7 @@ class UdacityAPI {
         case base = "https://onthemap-api.udacity.com/v1/"
         case session = "session"
         case studentLocations = "StudentLocation"
+        case userData = "users/"
 
     }
     
@@ -29,12 +31,22 @@ class UdacityAPI {
     enum Endpoints {
         static let manageSession = makeEndpoint(.base, .session)
         static let studentLocations = makeEndpoint(.base, .studentLocations)
+        
     }
     
     enum Session {
         static var id: String? = nil
         static var expirationDate: String? = nil
+        static var userId: String? = nil
+        
+        /// Removes all of the data associated with the session.
+        static func reset() {
+            id = nil
+            expirationDate = nil
+            userId = nil
+        }
     }
+    
     
     @discardableResult
     class func createSession(
@@ -52,10 +64,12 @@ class UdacityAPI {
         ) { result in
             do {
                 apiLogger.debug("handling session response")
+                let response = try result.get()
+                Session.id = response.session.id
+                Session.expirationDate = response.session.expiration
+                Session.userId = response.account.key
+                apiLogger.debug("set Session.userId to \(response.account.key)")
                 
-                let responseObject = try result.get()
-                Session.id = responseObject.session.id
-                Session.expirationDate = responseObject.session.expiration
                 completion(nil)
                 
             } catch {
@@ -68,20 +82,54 @@ class UdacityAPI {
     }
     
     @discardableResult
+    class func deleteSession(
+        completion: @escaping (Error?) -> Void
+    ) -> URLSessionDataTask? {
+    
+        let task = urlDataRequestWithBody(
+            url: Endpoints.manageSession,
+            httpMethod: "DELETE",
+            // cannot infer generic type without cast
+            body: nil as UserCredentials?,
+            responseType: DeleteSessionResponse.self
+        ) { result in
+            
+            switch result {
+                case .success(let response):
+                    apiLogger.debug("logged out:\n\(response)")
+                    Session.reset()
+                    completion(nil)
+                case .failure(let error):
+                    completion(error)
+            }
+                
+        }
+        return task
+    
+    }
+    
+    
+    @discardableResult
     class func getStudentLocations(
         completion: @escaping (Result<[Student], Error>) -> Void
     ) -> URLSessionDataTask {
+
         
         let task = urlDataRequest(
             url: Endpoints.studentLocations,
-            responseType: [String: [Student]].self
+            responseType: [String: [Student]?].self
         ) { result in
             do {
                 let reponseObject = try result.get()
-                if let locations = reponseObject["results"] {
+                if let results = reponseObject["results"] {
+                    if results == nil {
+                        apiLogger.error("student locations was nil")
+                    }
+                    let locations = results ?? []
                     completion(.success(locations))
                 }
                 else {
+                    apiLogger.error("couldn't get student locations")
                     completion(.failure("couldn't get results from student locations"))
                 }
                 
@@ -95,6 +143,24 @@ class UdacityAPI {
     }
     
     
+    @discardableResult
+    class func postStudentLocation(
+        student: PostStudent,
+        completion: @escaping (Result<LocationResponse, Error>) -> Void
+    ) -> URLSessionDataTask? {
+        
+        let task = urlDataRequestWithBody(
+            url: Endpoints.studentLocations,
+            httpMethod: "POST",
+            body: student,
+            responseType: LocationResponse.self,
+            completion: completion
+        )
+        
+        return task
+
+    }
+    
 
 }
 
@@ -106,23 +172,32 @@ extension UdacityAPI {
     private class func urlDataTaskDecodeJSON<ResponseObject: Decodable>(
         responseType: ResponseObject.Type,
         completion: @escaping (Result<ResponseObject, Error>) -> Void
-    ) -> ((Result<(data: Data, urlResponse: URLResponse), Error>) -> Void) {
+    ) -> ((Data?, URLResponse?, Error?) -> Void) {
         
-        return { result in
+        return { data, response, error in
+            
+            guard var data = data,
+                let response = response
+            else {
+                completion(.failure(error!))
+                return
+            }
+            
+            let httpResponse = response as! HTTPURLResponse
+            
+            if responseType == SessionResponse.self ||
+                    responseType == DeleteSessionResponse.self {
+                data = data.dropFirst(5)
+            }
+            
+            apiLogger.debug(
+                "status code for \(responseType): \(httpResponse.statusCode)"
+            )
+            apiLogger.debug(
+                "\(String(data: data, encoding: .utf8) ?? "nil")"
+            )
+            
             do {
-                var (data, urlResponse) = try result.get()
-                let httpResponse = urlResponse as! HTTPURLResponse
-                
-                if responseType == SessionResponse.self {
-                    data = data.dropFirst(5)
-                }
-                
-                apiLogger.debug(
-                    "status code for \(responseType): \(httpResponse.statusCode)"
-                )
-                
-                // apiLogger.debug("\(String(data: data, encoding: .utf8) ?? "nil")")
-                
                 if [200, 201].contains(httpResponse.statusCode) {
                     
                     let responseObject = try JSONDecoder().decode(
@@ -140,11 +215,12 @@ extension UdacityAPI {
                     errorResponseObject.httpStatusCode = httpResponse.statusCode
                     completion(.failure(errorResponseObject))
                 }
-                
+            
             } catch {
                 apiLogger.error("urlDataTaskDecodeJSON:\n\(error)")
                 completion(.failure(error))
             }
+            
         }
         
     }
@@ -153,7 +229,7 @@ extension UdacityAPI {
     private class func urlDataRequestWithBody<Body: Encodable, ResponseObject: Decodable>(
         url: URL,
         httpMethod: String,
-        body: Body,
+        body: Body?,
         headers: [(headerField: String, value: String)] = [
             (headerField: "Accept", value: "application/json"),
             (headerField: "Content-Type", value: "application/json"),
@@ -173,12 +249,18 @@ extension UdacityAPI {
             )
         }
         
-        do {
-            request.httpBody = try JSONEncoder().encode(body)
-            apiLogger.debug("body: \(String(data: request.httpBody!, encoding: .utf8)!)")
-        } catch {
-            completion(.failure(error))
-            return nil
+        if let body = body {
+            do {
+                request.httpBody = try JSONEncoder().encode(body)
+                let stringBody = String(
+                    data: request.httpBody!, encoding: .utf8
+                ) ?? "nil"
+                apiLogger.debug("body: \(stringBody)")
+                
+            } catch {
+                completion(.failure(error))
+                return nil
+            }
         }
         
         let task = URLSession.shared.dataTask(

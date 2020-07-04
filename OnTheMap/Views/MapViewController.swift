@@ -19,8 +19,16 @@ class MapViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         mapView.delegate = self
-        getStudentLocations()
+        getStudentLocationsWrapper()
     }
+    
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        print("map view viewWillAppear")
+        updateMapPins()
+    }
+    
     
     @IBAction func newPinButtonTapped(_ sender: Any) {
         
@@ -28,41 +36,35 @@ class MapViewController: UIViewController {
             identifier: "NewPinViewController"
         ) as! NewPinViewController
         
-        controller.mapViewController = self
-        
+        controller.updateCallback = updateMapPins
         present(controller, animated: true)
-        
-        
+    }
+    
+    @IBAction func logoutButtonTapped(_ sender: Any) {
+        UdacityAPI.deleteSession { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    let alert = makeAlert(
+                        title: "Couldn't Log Out",
+                        msg: error.localizedDescription
+                    )
+                    self.present(alert, animated: true)
+                }
+                else {
+                    mapViewLogger.debug("should dismiss")
+                    self.dismiss(animated: true, completion: nil)
+                }
+            }
+        }
     }
     
     @IBAction func reloadButtonTapped(_ sender: Any) {
-        getStudentLocations()
+        getStudentLocationsWrapper()
     }
     
-    
-    func addNewPin(placemark: CLPlacemark) {
-        guard let coordinate = placemark.location?.coordinate else {
-            mapViewLogger.error(
-                "could not get coordinates from user-entered address"
-            )
-            return
-        }
-        let pin = MKPointAnnotation()
-        pin.coordinate = coordinate
-        mapView.addAnnotation(pin)
-        mapViewLogger.debug("did add new pin from user address")
-        
-    }
-    
-    
-    func getStudentLocations() {
-        
-        UdacityAPI.getStudentLocations { result in
-            do {
-                StudentData.students = try result.get()
-                self.addMapPins()
-                
-            } catch {
+    func getStudentLocationsWrapper() {
+        StudentData.getStudentLocations { error in
+            if let error = error {
                 DispatchQueue.main.async {
                     let alert = makeAlert(
                         title: "Couldn't get student locations",
@@ -70,22 +72,35 @@ class MapViewController: UIViewController {
                     )
                     self.present(alert, animated: true)
                 }
-                
+            }
+            else {
+                self.updateMapPins()
             }
         }
-        
     }
     
-    func addMapPins() {
+    func updateMapPins() {
         DispatchQueue.main.async {
+            var addedPins = 0
+            StudentData.sort()
             for student in StudentData.students {
+                
+                if self.mapView.annotations.contains(where: { annotation in
+                    annotation.title == student.fullName &&
+                            annotation.subtitle == student.mediaURL &&
+                            annotation.coordinate == student.mapCoordinate
+                }) {
+                    continue
+                }
+                
                 let pin = MKPointAnnotation()
                 pin.coordinate = student.mapCoordinate
                 pin.title = student.fullName
                 pin.subtitle = student.mediaURL
                 self.mapView.addAnnotation(pin)
+                addedPins += 1
             }
-            mapViewLogger.debug("added \(StudentData.students.count) pins")
+            mapViewLogger.debug("added \(addedPins) pins")
         }
     }
     
@@ -101,10 +116,6 @@ extension MapViewController: MKMapViewDelegate {
         _ mapView: MKMapView, viewFor annotation: MKAnnotation
     ) -> MKAnnotationView? {
 
-        // mapViewLogger.debug(
-        //     "making view for annotation: \((annotation.title as? String) ?? "no title")"
-        // )
-        
         if annotation is MKUserLocation { return nil }
 
         var annotationView = mapView.dequeueReusableAnnotationView(
@@ -149,7 +160,7 @@ extension MapViewController: MKMapViewDelegate {
                let url = URL(string: string) {
         
             mapViewLogger.debug("will open url: \(url)")
-            // UIApplication.shared.open(url)
+            UIApplication.shared.open(url)
         }
         else {
             mapViewLogger.warning(

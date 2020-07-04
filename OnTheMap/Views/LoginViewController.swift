@@ -15,11 +15,30 @@ class LoginViewController: UIViewController {
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var loginButton: UIButton!
-    @IBOutlet weak var signUpButton: UIButton!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
     @IBOutlet weak var cancelButton: UIButton!
     
     var loginTasks: [URLSessionDataTask?] = []
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        #warning("Remove Login Credentials")
+        emailTextField.text = "accountifunny@yahoo.com"
+        passwordTextField.text = "iRH5NCNc8aqeQSf"
+        
+        isLoggingIn = false
+        loginButton.isEnabled = !emailOrPasswordAreEmpty
+        for textField in [emailTextField, passwordTextField] {
+            textField?.addTarget(
+                self,
+                action: #selector(textFieldDidChange(_:)),
+                for: .editingChanged
+            )
+        }
+     
+        
+    }
     
     
     @IBAction func loginButtonTapped(_ sender: Any) {
@@ -67,25 +86,6 @@ class LoginViewController: UIViewController {
         isLoggingIn = false
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        #warning("Remove Login Credentials")
-        emailTextField.text = "accountifunny@yahoo.com"
-        passwordTextField.text = "iRH5NCNc8aqeQSf"
-        
-        loginButton.isEnabled = !emailOrPasswordAreEmpty
-        for textField in [emailTextField, passwordTextField] {
-            textField?.addTarget(
-                self,
-                action: #selector(textFieldDidChange(_:)),
-                for: .editingChanged
-            )
-        }
-     
-        
-    }
-    
     
     func cancelLoginTasks() {
         
@@ -106,7 +106,6 @@ class LoginViewController: UIViewController {
             DispatchQueue.main.async {
                 self._isLoggingIn = newValue
                 self.loginButton.isEnabled = !self._isLoggingIn
-                self.signUpButton.isEnabled = !self._isLoggingIn
                 self.emailTextField.isEnabled = !self._isLoggingIn
                 self.passwordTextField.isEnabled = !self._isLoggingIn
                 self.cancelButton.isHidden = !self._isLoggingIn
